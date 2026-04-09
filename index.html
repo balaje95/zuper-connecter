@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Zuper Account Connector</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --orange: #e8622a; --orange-dark: #c84f1e; --orange-light: #fdf0ea;
+      --green: #22c55e; --green-light: #f0fdf4;
+      --red: #ef4444; --red-light: #fef2f2;
+      --gray-50: #f9fafb; --gray-100: #f3f4f6; --gray-200: #e5e7eb;
+      --gray-300: #d1d5db; --gray-400: #9ca3af; --gray-500: #6b7280;
+      --gray-600: #4b5563; --gray-700: #374151; --gray-900: #111827;
+      --shadow: 0 4px 6px -1px rgba(0,0,0,.07), 0 2px 4px -2px rgba(0,0,0,.05);
+      --shadow-lg: 0 10px 25px -3px rgba(0,0,0,.10), 0 4px 10px -4px rgba(0,0,0,.06);
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--gray-50); color: var(--gray-700); min-height: 100vh; display: flex; flex-direction: column; }
+    nav { background: #fff; border-bottom: 1px solid var(--gray-200); padding: 0 24px; height: 56px; display: flex; align-items: center; gap: 12px; box-shadow: var(--shadow); }
+    .nav-title { font-size: 15px; font-weight: 600; color: var(--gray-900); }
+    main { flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px 16px; }
+    .card { background: #fff; border-radius: 16px; box-shadow: var(--shadow-lg); width: 100%; max-width: 480px; padding: 36px 32px; }
+    .card-header { margin-bottom: 28px; text-align: center; }
+    .card-icon { width: 52px; height: 52px; background: var(--orange-light); border-radius: 14px; display: flex; align-items: center; justify-content: center; margin: 0 auto 14px; }
+    .card-icon svg { width: 28px; height: 28px; color: var(--orange); }
+    .card-header h1 { font-size: 20px; font-weight: 700; color: var(--gray-900); margin-bottom: 6px; }
+    .card-header p  { font-size: 14px; color: var(--gray-500); line-height: 1.5; }
+    .field { margin-bottom: 20px; }
+    label { display: block; font-size: 13px; font-weight: 600; color: var(--gray-700); margin-bottom: 6px; }
+    label .req { color: var(--orange); margin-left: 2px; }
+    .input-wrap { position: relative; display: flex; align-items: center; }
+    .input-wrap input, .input-wrap select { width: 100%; height: 42px; padding: 0 12px; border: 1.5px solid var(--gray-200); border-radius: 8px; font-size: 14px; color: var(--gray-900); background: #fff; outline: none; transition: border-color .15s; appearance: none; -webkit-appearance: none; }
+    .input-wrap input:focus, .input-wrap select:focus { border-color: var(--orange); box-shadow: 0 0 0 3px rgba(232,98,42,.12); }
+    .input-wrap input.has-toggle { padding-right: 40px; }
+    .select-wrap::after { content: ''; position: absolute; right: 12px; top: 50%; transform: translateY(-50%); pointer-events: none; width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 6px solid var(--gray-400); }
+    .toggle-btn { position: absolute; right: 10px; background: none; border: none; cursor: pointer; padding: 4px; color: var(--gray-400); display: flex; align-items: center; transition: color .15s; }
+    .toggle-btn:hover { color: var(--gray-700); }
+    .toggle-btn svg { width: 18px; height: 18px; }
+    .field-hint { margin-top: 5px; font-size: 12px; color: var(--gray-400); }
+    .btn-connect { width: 100%; height: 44px; background: var(--orange); color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: background .15s, transform .1s; margin-top: 8px; }
+    .btn-connect:hover:not(:disabled) { background: var(--orange-dark); }
+    .btn-connect:active:not(:disabled) { transform: scale(0.98); }
+    .btn-connect:disabled { opacity: .65; cursor: not-allowed; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner { width: 18px; height: 18px; border: 2.5px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; display: none; }
+    .result { margin-top: 22px; border-radius: 10px; padding: 16px 18px; display: none; }
+    .result.show { display: flex; gap: 14px; align-items: flex-start; }
+    .result-icon { flex-shrink: 0; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+    .result-icon svg { width: 18px; height: 18px; }
+    .result.success { background: var(--green-light); border: 1px solid #bbf7d0; }
+    .result.success .result-icon { background: #dcfce7; color: var(--green); }
+    .result.success .result-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #16a34a; margin-bottom: 3px; }
+    .result.success .result-name  { font-size: 17px; font-weight: 700; color: var(--gray-900); }
+    .result.success .result-sub   { font-size: 12px; color: #16a34a; margin-top: 3px; }
+    .result.error { background: var(--red-light); border: 1px solid #fecaca; }
+    .result.error .result-icon { background: #fee2e2; color: var(--red); }
+    .result.error .result-title { font-size: 14px; font-weight: 700; color: #b91c1c; margin-bottom: 3px; }
+    .result.error .result-msg   { font-size: 13px; color: #ef4444; line-height: 1.5; }
+    .result-body { flex: 1; }
+    .account-meta { margin-top: 14px; padding: 12px 14px; background: #fff; border-radius: 8px; border: 1px solid var(--gray-200); display: none; }
+    .account-meta.show { display: block; }
+    .meta-row { display: flex; justify-content: space-between; align-items: flex-start; font-size: 12px; padding: 4px 0; color: var(--gray-600); }
+    .meta-row + .meta-row { border-top: 1px solid var(--gray-100); margin-top: 4px; padding-top: 7px; }
+    .meta-key { font-weight: 600; color: var(--gray-500); flex-shrink: 0; margin-right: 8px; }
+    .meta-val { color: var(--gray-700); text-align: right; word-break: break-all; }
+    footer { text-align: center; padding: 16px; font-size: 12px; color: var(--gray-400); }
+  </style>
+</head>
+<body>
+<nav>
+  <svg width="32" height="32" viewBox="0 0 36 36" fill="none" style="flex-shrink:0"><rect width="36" height="36" rx="8" fill="#e8622a"/><path d="M9 11h18l-12 14h12" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <span class="nav-title">Zuper Account Connector</span>
+</nav>
+<main>
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+      </div>
+      <h1>Connect to Zuper</h1>
+      <p>Enter your API key and region to verify and identify your Zuper account.</p>
+    </div>
+
+    <div class="field">
+      <label for="apiKeyInput">Zuper API Key <span class="req">*</span></label>
+      <div class="input-wrap">
+        <input type="password" id="apiKeyInput" class="has-toggle" placeholder="Your Zuper x-api-key" autocomplete="off" spellcheck="false"/>
+        <button type="button" class="toggle-btn" id="toggleKey" aria-label="Show/hide API key">
+          <svg id="eyeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          <svg id="eyeOffIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+        </button>
+      </div>
+      <p class="field-hint">From Zuper &rarr; Settings &rarr; Developer (x-api-key header).</p>
+    </div>
+
+    <div class="field">
+      <label for="baseUrlSelect">Zuper Region / Base URL <span class="req">*</span></label>
+      <div class="input-wrap select-wrap">
+        <select id="baseUrlSelect">
+          <option value="https://us-east-1.zuperpro.com/api/">us-east-1 &mdash; Production</option>
+          <option value="https://us-west-1c.zuperpro.com/api/">us-west-1c</option>
+          <option value="https://stagingv2.zuperpro.com/api/">Staging</option>
+        </select>
+      </div>
+      <p class="field-hint">Select your Zuper region / environment.</p>
+    </div>
+
+    <button class="btn-connect" id="connectBtn" onclick="connectZuper()">
+      <div class="spinner" id="spinner"></div>
+      <span id="btnLabel">Verify &amp; Connect</span>
+    </button>
+
+    <div class="result success" id="successBox">
+      <div class="result-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <div class="result-body">
+        <div class="result-label">Connected Account</div>
+        <div class="result-name" id="accountName">&mdash;</div>
+        <div class="result-sub">API key verified successfully &#10003;</div>
+      </div>
+    </div>
+
+    <div class="account-meta" id="accountMeta">
+      <div class="meta-row"><span class="meta-key">Region</span><span class="meta-val" id="metaRegion">&mdash;</span></div>
+      <div class="meta-row"><span class="meta-key">Base URL</span><span class="meta-val" id="metaUrl">&mdash;</span></div>
+      <div class="meta-row"><span class="meta-key">API Key (masked)</span><span class="meta-val" id="metaKey">&mdash;</span></div>
+    </div>
+
+    <div class="result error" id="errorBox">
+      <div class="result-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      </div>
+      <div class="result-body">
+        <div class="result-title">Verification Failed</div>
+        <div class="result-msg" id="errorMsg">&mdash;</div>
+      </div>
+    </div>
+  </div>
+</main>
+<footer>Zuper Account Connector &mdash; communicates directly with zuperpro.com APIs</footer>
+<script>
+  document.getElementById('toggleKey').addEventListener('click', function () {
+    var input = document.getElementById('apiKeyInput');
+    var hidden = input.type === 'password';
+    input.type = hidden ? 'text' : 'password';
+    document.getElementById('eyeIcon').style.display    = hidden ? 'none' : '';
+    document.getElementById('eyeOffIcon').style.display = hidden ? ''     : 'none';
+  });
+  ['apiKeyInput','baseUrlSelect'].forEach(function(id){
+    document.getElementById(id).addEventListener('keydown', function(e){ if(e.key==='Enter') connectZuper(); });
+  });
+  async function connectZuper() {
+    var apiKey  = document.getElementById('apiKeyInput').value.trim();
+    var baseUrl = document.getElementById('baseUrlSelect').value;
+    hide('successBox'); hide('errorBox'); hide('accountMeta');
+    if (!apiKey)  { showError('Please enter your Zuper API key.'); return; }
+    if (!baseUrl) { showError('Please select a Zuper Base URL / region.'); return; }
+    setLoading(true);
+    try {
+      var response = await fetch(baseUrl + 'user/company', {
+        method: 'GET',
+        headers: { 'x-api-key': apiKey }
+      });
+      var json = await response.json();
+      if (!response.ok) {
+        showError(json.message || json.error || ('HTTP ' + response.status + ' — invalid API key or wrong region.'));
+        return;
+      }
+      var name =
+        (json.data && json.data.company_name) ||
+        (json.data && json.data.name)         ||
+        json.company_name || json.name || null;
+      if (!name) {
+        showError('Connected, but company name not found in response. Raw: ' + JSON.stringify(json).substring(0,150));
+        return;
+      }
+      showSuccess(name, apiKey, baseUrl);
+    } catch(err) {
+      if (err.name === 'TypeError') {
+        showError('Network error. Check the Base URL is correct and that CORS is enabled on your Zuper account. Some regions require requests via a backend proxy.');
+      } else {
+        showError(err.message || 'Unexpected error.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+  function setLoading(on){
+    document.getElementById('connectBtn').disabled   = on;
+    document.getElementById('spinner').style.display = on ? 'block' : 'none';
+    document.getElementById('btnLabel').textContent  = on ? 'Verifying…' : 'Verify & Connect';
+  }
+  function showSuccess(name, apiKey, baseUrl){
+    document.getElementById('accountName').textContent = name;
+    show('successBox');
+    var sel = document.getElementById('baseUrlSelect');
+    document.getElementById('metaRegion').textContent = sel.options[sel.selectedIndex].text;
+    document.getElementById('metaUrl').textContent    = baseUrl;
+    document.getElementById('metaKey').textContent    = maskKey(apiKey);
+    show('accountMeta');
+  }
+  function showError(msg){ document.getElementById('errorMsg').textContent = msg; show('errorBox'); }
+  function maskKey(k){ return k.length<=8 ? '••••••••' : k.substring(0,6)+'••••••••'+k.substring(k.length-4); }
+  function show(id){ document.getElementById(id).classList.add('show'); }
+  function hide(id){ document.getElementById(id).classList.remove('show'); }
+</script>
+</body>
+</html>
